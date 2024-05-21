@@ -54,6 +54,9 @@ def sample_gaussian(m, v):
     # consider an alternative using torch.randn_like: https://pytorch.org/docs/stable/generated/torch.randn_like.html
     ################################################################################
     ### START CODE HERE ###
+    std_v = torch.sqrt(v)
+    eps = torch.randn_like(std_v)
+    return m + eps * std_v
     ### END CODE HERE ###
     ################################################################################
     # End of code modification
