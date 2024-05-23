@@ -53,11 +53,15 @@ class VAE(nn.Module):
         # 2. sample z given the Mean and Variance
         z = ut.sample_gaussian(qm,qv)
 
+        # 3. expand z_prior_m and z_prior_v to the same shape as qm and qv
         pm = self.z_prior_m.expand(qm.shape)
         pv = self.z_prior_v.expand(qv.shape)
+        # 4. calculate KL divergence to prior
         kl = torch.mean(ut.kl_normal(qm, qv, pm, pv))
 
+        # 5. decode z and tries to reconstruct the original input
         x_logits = self.dec(z)
+        # 6. calculates the reconstruction loss
         rec = -1.0 * torch.mean(ut.log_bernoulli_with_logits(x, x_logits))
 
         nelbo = kl + rec
