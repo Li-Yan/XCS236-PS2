@@ -48,6 +48,21 @@ class VAE(nn.Module):
         #   nelbo, kl, rec
         ################################################################################
         ### START CODE HERE ###
+        # 1. encoding the input
+        qm, qv = self.enc(x)
+        # 2. sample z given the Mean and Variance
+        z = ut.sample_gaussian(qm,qv)
+
+        pm = self.z_prior_m.expand(qm.shape)
+        pv = self.z_prior_v.expand(qv.shape)
+        kl = torch.mean(ut.kl_normal(qm, qv, pm, pv))
+
+        x_logits = self.dec(z)
+        rec = -1.0 * torch.mean(ut.log_bernoulli_with_logits(x, x_logits))
+
+        nelbo = kl + rec
+
+        return nelbo, kl, rec
         ### END CODE HERE ###
         ################################################################################
         # End of code modification
