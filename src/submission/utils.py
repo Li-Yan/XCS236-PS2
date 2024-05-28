@@ -90,6 +90,7 @@ def log_normal(x, m, v):
     # the last dimension
     ################################################################################
     ### START CODE HERE ###
+    # simply use the probability density function for a Guassioan distribution
     log_std_v = torch.log(torch.sqrt(v))
     log_pdfs = - log_std_v - np.log(np.sqrt(2 * np.pi)) - ((x - m) ** 2) / (2 * v)
     return log_pdfs.sum(-1)
