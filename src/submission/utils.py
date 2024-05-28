@@ -119,6 +119,11 @@ def log_normal_mixture(z, m, v):
     # in the batch
     ################################################################################
     ### START CODE HERE ###
+    log_std_v = torch.log(torch.sqrt(v))
+    mz = torch.unsqueeze(z, 1).expand(m.shape)
+    log_pdfs = - log_std_v - np.log(np.sqrt(2 * np.pi)) - ((mz - m) ** 2) / (2 * v)
+    log_normals = log_pdfs.sum(-1)
+    return log_mean_exp(log_normals, -1)
     ### END CODE HERE ###
     ################################################################################
     # End of code modification
