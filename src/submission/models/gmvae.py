@@ -59,6 +59,32 @@ class GMVAE(nn.Module):
         # this object by checking its shape.
         prior = ut.gaussian_parameters(self.z_pre, dim=1)
         ### START CODE HERE ###
+        # 1. encoding the input
+        qm, qv = self.enc(x)
+        # 2. sample z given the Mean and Variance
+        z = ut.sample_gaussian(qm,qv)
+
+        # 3. calculate log_normal
+        log_normal = ut.log_normal(z, qm, qv)
+
+        # 4. calculate log_normal_mixture
+        prior_m = prior[0]
+        prior_v = prior[1]
+        multi_m = prior_m.expand(z.shape[0], prior_m.shape[1], prior_m.shape[2])
+        multi_v = prior_v.expand(z.shape[0], prior_v.shape[1], prior_v.shape[2])
+        log_normal_mixture = ut.log_normal_mixture(z, multi_m, multi_v)
+
+        kls = log_normal - log_normal_mixture
+        kl = torch.mean(kls)
+
+        # 5. decode z and tries to reconstruct the original input
+        x_logits = self.dec(z)
+        # 6. calculates the reconstruction loss
+        rec = -1.0 * torch.mean(ut.log_bernoulli_with_logits(x, x_logits))
+
+        nelbo = kl + rec
+
+        return nelbo, kl, rec
         ### END CODE HERE ###
         ################################################################################
         # End of code modification
