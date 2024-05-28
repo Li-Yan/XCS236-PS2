@@ -90,6 +90,9 @@ def log_normal(x, m, v):
     # the last dimension
     ################################################################################
     ### START CODE HERE ###
+    log_std_v = torch.log(torch.sqrt(v))
+    log_pdfs = - log_std_v - np.log(np.sqrt(2 * np.pi)) - ((x - m) ** 2) / (2 * v)
+    return log_pdfs.sum(-1)
     ### END CODE HERE ###
     ################################################################################
     # End of code modification
