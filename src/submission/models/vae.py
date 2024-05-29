@@ -102,6 +102,34 @@ class VAE(nn.Module):
         # calculating log_normal w.r.t prior and q
         ################################################################################
         ### START CODE HERE ###
+        # 1. encoding the input
+        qm, qv = self.enc(x)
+        # 2. duplicates qm,qv iw times along a new dimension.
+        multi_qm = ut.duplicate(qm, iw)
+        multi_qv = ut.duplicate(qv, iw)
+        # 3. sample z given the Mean and Variance
+        z = ut.sample_gaussian(multi_qm,multi_qv)
+
+        # 4. calcuate KL
+        pm = self.z_prior_m.expand(qm.shape)
+        pv = self.z_prior_v.expand(qv.shape)
+        kl = torch.mean(ut.kl_normal(qm, qv, pm, pv))
+
+        # 5. duplicates the input data x iw times
+        multi_x = ut.duplicate(x, iw)
+        # 6. calculate rec
+        x_logits = self.dec(z)
+        recs = ut.log_bernoulli_with_logits(multi_x, x_logits)
+        rec = -1.0 * torch.mean(recs)
+
+        # 7. expands Mean and Variance of z_prior to match the shape of multi_qm and multi_qv
+        multi_pm = self.z_prior_m.expand(multi_qm.shape)
+        multi_pv = self.z_prior_v.expand(multi_qv.shape)
+        # 8. calculate niwae
+        log_ratios = ut.log_normal(z, multi_pm, multi_pv) + recs - ut.log_normal(z, multi_qm, multi_qv)
+        niwae = -1.0 * torch.mean(ut.log_mean_exp(log_ratios.reshape(iw, x.shape[0]), 0))
+
+        return niwae, kl, rec
         ### END CODE HERE ###
         ################################################################################
         # End of code modification
