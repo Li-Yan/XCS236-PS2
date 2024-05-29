@@ -122,14 +122,17 @@ class VAE(nn.Module):
         recs = ut.log_bernoulli_with_logits(multi_x, x_logits)
         rec = -1.0 * torch.mean(recs)
 
-        # 7. expands Mean and Variance of z_prior to match the shape of multi_qm and multi_qv
-        multi_pm = self.z_prior_m.expand(multi_qm.shape)
-        multi_pv = self.z_prior_v.expand(multi_qv.shape)
-        # 8. calculate niwae
-        z_priors = ut.log_normal(z, multi_pm, multi_pv)
+        # 7. calculate z_posteriors
         x_posteriors = recs
         z_posteriors = ut.log_normal(z, multi_qm, multi_qv)
 
+        # 7. expands Mean and Variance of z_prior to match the shape of multi_qm and multi_qv
+        multi_pm = self.z_prior_m.expand(multi_qm.shape)
+        multi_pv = self.z_prior_v.expand(multi_qv.shape)
+        # 8. calculate z_priors
+        z_priors = ut.log_normal(z, multi_pm, multi_pv)
+
+        # 9. calculate niwae
         log_ratios = z_priors + x_posteriors - z_posteriors
         niwae = -1.0 * torch.mean(ut.log_mean_exp(log_ratios.reshape(iw, x.shape[0]), 0))
 

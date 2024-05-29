@@ -64,10 +64,10 @@ class GMVAE(nn.Module):
         # 2. sample z given the Mean and Variance
         z = ut.sample_gaussian(qm,qv)
 
-        # 3. calculate log_normal
+        # 3. calculate z_posteriors
         z_posteriors = ut.log_normal(z, qm, qv)
 
-        # 4. calculate log_normal_mixture
+        # 4. calculate z_priors using log_normal_mixture
         prior_m = prior[0]
         prior_v = prior[1]
         multi_m = prior_m.expand(z.shape[0], prior_m.shape[1], prior_m.shape[2])
@@ -127,25 +127,29 @@ class GMVAE(nn.Module):
         # 3. sample z given the Mean and Variance
         z = ut.sample_gaussian(multi_qm, multi_qv)
 
-        # 5. duplicates the input data x iw times
+        # 4. duplicates the input data x iw times
         multi_x = ut.duplicate(x, iw)
-        # 6. calculate rec
+        # 5. calculate rec
         x_logits = self.dec(z)
         recs = ut.log_bernoulli_with_logits(multi_x, x_logits)
         rec = -1.0 * torch.mean(recs)
 
+        # 6. calculate z_posteriors using log_normal_mixture
+        x_posteriors = recs
+        z_posteriors = ut.log_normal(z, multi_qm, multi_qv)
+
+        # 7. calculate z_priors using log_normal_mixture
         prior_m = prior[0]
         prior_v = prior[1]
         multi_prior_m = prior_m.expand(x.shape[0] * iw, prior_m.shape[1], prior_m.shape[2])
         multi_prior_v = prior_v.expand(x.shape[0] * iw, prior_v.shape[1], prior_v.shape[2])
         z_priors = ut.log_normal_mixture(z, multi_prior_m, multi_prior_v)
-        x_posteriors = recs
-        z_posteriors = ut.log_normal(z, multi_qm, multi_qv)
 
+        # 8. calculate KL
         kls = z_posteriors - z_priors
         kl = torch.mean(kls)
 
-        # 8. calculate niwae
+        # 9. calculate niwae
         log_ratios = z_priors + x_posteriors - z_posteriors
         niwae = -1.0 * torch.mean(ut.log_mean_exp(log_ratios.reshape(iw, x.shape[0]), 0))
 
