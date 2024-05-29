@@ -108,7 +108,7 @@ class VAE(nn.Module):
         multi_qm = ut.duplicate(qm, iw)
         multi_qv = ut.duplicate(qv, iw)
         # 3. sample z given the Mean and Variance
-        z = ut.sample_gaussian(multi_qm,multi_qv)
+        z = ut.sample_gaussian(multi_qm, multi_qv)
 
         # 4. calcuate KL
         pm = self.z_prior_m.expand(qm.shape)
@@ -126,7 +126,11 @@ class VAE(nn.Module):
         multi_pm = self.z_prior_m.expand(multi_qm.shape)
         multi_pv = self.z_prior_v.expand(multi_qv.shape)
         # 8. calculate niwae
-        log_ratios = ut.log_normal(z, multi_pm, multi_pv) + recs - ut.log_normal(z, multi_qm, multi_qv)
+        z_priors = ut.log_normal(z, multi_pm, multi_pv)
+        x_posteriors = recs
+        z_posteriors = ut.log_normal(z, multi_qm, multi_qv)
+
+        log_ratios = z_priors + x_posteriors - z_posteriors
         niwae = -1.0 * torch.mean(ut.log_mean_exp(log_ratios.reshape(iw, x.shape[0]), 0))
 
         return niwae, kl, rec
