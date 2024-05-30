@@ -84,8 +84,7 @@ class SSVAE(nn.Module):
         x = ut.duplicate(x, self.y_dim)
         ### START CODE HERE ###
 
-        y_prior = torch.tensor([0.1]).expand_as(y_prob)
-        y_logprior = torch.log(y_prior)
+        y_logprior = torch.log(torch.tensor([0.1]).expand_as(y_prob))
         kl_ys = ut.kl_cat(y_prob, y_logprob, y_logprior)
         kl_y = torch.mean(kl_ys)
 
@@ -94,17 +93,15 @@ class SSVAE(nn.Module):
         zpm = self.z_prior_m.expand_as(zqm)
         zpv = self.z_prior_v.expand_as(zqv)
 
-        kl_zs_flat = ut.kl_normal(zqm, zqv, zpm, zpv)
-        kl_zs = kl_zs_flat.reshape(y_prob.shape)
+        kl_zs = ut.kl_normal(zqm, zqv, zpm, zpv).reshape(y_prob.shape)
         kl_zs_weighted = kl_zs * y_prob
         batch_kl_zs = kl_zs_weighted.sum(1)
         kl_z = batch_kl_zs.mean()
 
         z = ut.sample_gaussian(zqm, zqv)
 
-        probs = self.dec(z, y)
-        recs_flat = -1.0 * ut.log_bernoulli_with_logits(x, probs)
-        recs = recs_flat.reshape(y_prob.shape)
+        logits = self.dec(z, y)
+        recs = -1.0 * ut.log_bernoulli_with_logits(x, logits).reshape(y_prob.shape)
         recs_weighted = recs * y_prob
         batch_recs = recs_weighted.sum(1)
         rec = batch_recs.mean()
